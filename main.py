@@ -1,17 +1,23 @@
 from vpython import *
-original_mass = 1500
-mass_of_earth = 5.9722*10**24
-radius = 0.23
-radius_of_earth = 6.371 * 10**6
-length = 6.1
-length_of_warhead = length*3/14.4
-length_of_missile_body = length*11.4/14.4
-cross_section = radius**2*pi
-volume = 1/3*cross_section*length_of_warhead+cross_section*length_of_missile_body
-pushing_force = 1814*1000*(275/2000)**(5/3)
-acceleration_time = 1025*9.8*330/pushing_force
-drag_force_constant = 0.5
-gravitational_constant = 6.6743 * 10 **(-11)
+original_mass = 1500 #飛彈質量
+mass_of_earth = 5.9722*10**24 #地球質量
+radius = 0.23 #飛彈半徑
+radius_of_earth = 6.371 * 10**6 #地球半徑
+length = 6.1 #飛彈長度
+length_of_warhead = length*3/14.4 #彈頭長度
+length_of_missile_body = length*11.4/14.4 #飛彈本體長度
+cross_section = radius**2*pi #飛彈橫截面
+volume = 1/3*cross_section*length_of_warhead+cross_section*length_of_missile_body #飛彈體積
+pushing_force = 1814*1000*(275/2000)**(5/3) #推進力
+acceleration_time = 1025*9.8*330/pushing_force #加速時間
+drag_force_constant = 0.5 #拖曳力常數
+gravitational_constant = 6.6743 * 10 **(-11) #重力常數
+
+center_of_earth = vector(0,0,0) #地球球心
+rocket = vector(radius_of_earth,0,0) #火箭
+angular_velocity = 2*pi/86400 #地球自轉角速度
+h = 0 #火箭離地表高度
+omega =  #要換成向量
 
 g = 9.8
 def mass(t):
@@ -42,3 +48,18 @@ def Coriolis_force(mass,omega,v):
     return -2*mass*cross(omega,v)
 def gravity(mass,h):
     return - gravitational_constant*mass_of_earth*mass/(h+radius_of_earth)**2
+
+t = 0
+dt = 0.0001
+while mag(rocket-center_of_earth) >= 0:
+    rate(1000)
+    m = mass(t)
+    RHO = rho(h)
+    A = #要做出火箭向量，然後找出截面積
+    F = lift(RHO) + drag_force(RHO,v,A) + Coriolis_force(m,omega,v) + gravity(m,h)
+    a = F/m
+    v += a * dt
+    rocket += v * dt
+    t += dt
+
+print(rocket)
