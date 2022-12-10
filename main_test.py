@@ -88,4 +88,5 @@ while mag(rocket-center_of_earth)-radius_of_earth >= 0:
     scene.center =rocket
     t += dt
 bug = 0
+bug2 = 1
 print(rocket)
