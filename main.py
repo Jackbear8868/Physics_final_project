@@ -76,5 +76,5 @@ while mag(rocket-center_of_earth)-radius_of_earth >= 0:
     v += a * dt
     rocket += v * dt
     t += dt
-ppppppp = 1
+
 print(rocket)
