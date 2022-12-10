@@ -72,6 +72,7 @@ def gravity(mass,h,vec):
 
 t = 0
 dt = 0.0001
+scene.center =rocket_3D
 while mag(rocket-center_of_earth)-radius_of_earth >= 0:
     rate(1000)
     m = mass(t)
@@ -85,7 +86,7 @@ while mag(rocket-center_of_earth)-radius_of_earth >= 0:
     rocket_3D.pos=rocket
     rocket_3D.axis=norm(v)*length_of_missile_body
     rocket_head.pos=rocket+norm(v)*length_of_missile_body
-    scene.center =rocket
+    scene.center =rocket_3D
     t += dt
 
 print(rocket)
