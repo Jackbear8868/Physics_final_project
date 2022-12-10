@@ -87,6 +87,5 @@ while mag(rocket-center_of_earth)-radius_of_earth >= 0:
     rocket_head.pos=rocket+norm(v)*length_of_missile_body
     scene.center =rocket
     t += dt
-bug = 0
-1233
+
 print(rocket)
