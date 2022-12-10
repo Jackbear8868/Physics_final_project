@@ -16,8 +16,8 @@ gravitational_constant = 6.6743 * 10 **(-11) #重力常數
 longitude = pi*121/180 
 latitude = pi*23.5/180
 origin_x = radius_of_earth * cos(longitude) * cos(latitude)
-origin_y = radius_of_earth * cos(longitude) * sin(latitude)
-origin_z = radius_of_earth * sin(radius_of_earth)
+origin_z = radius_of_earth * cos(longitude) * sin(latitude)
+origin_y = radius_of_earth * sin(radius_of_earth)
 
 drag_force_constant = 0.5 #拖曳力常數
 
@@ -31,32 +31,33 @@ h = 0 #火箭離地表高度
 omega = vector(0,0,angular_velocity)#要換成向量
 
 g = 9.8
+scene = canvas(width=500, height=500, center=vec(0, -0.2, 0), background=vec(0.8,0.8,0.8),align="left")
 earth=sphere(pos=vec(0,0,0),radius=radius_of_earth, texture={'file':textures.earth})
 rocket_3D=cylinder(radius=radius,pos=rocket,color=color.cyan)
 rocket_3D.axis=norm(v)*length_of_missile_body
 rocket_head=cone(radius=radius,pos=rocket+norm(v)*length_of_missile_body,color=color.white)
-scene = canvas(width=500, height=500, center=vec(0, -0.2, 0), background=vec(0.8,0.8,0.8),align="left")
+rocket_head.axis=norm(v)*length_of_warhead
 
-def mass(t):
-    if t < acceleration_time:
-        return original_mass-1025*t/acceleration_time
-    else:
-        return 475
-def rho(h):
-    if h > 25000:
-        T = -131.21 + 0.00299*h
-        p = 2.488 * ((T+273.1)/216.6)**(-11.388)
-    elif 25000 >= h > 11000:
-        T = -56.46
-        p = 22.65*e**(1.73-0.000157*h)
-    else:
-        T = 15.04-0.00649*h
-        p = 101.29*((T+273.1)/288.08)**(5.256)
-    rho = p/(0.2869*(T+273.1))
-    return rho
-def push(direction):
-    push = pushing_force*norm(direction)
-    return push
+# def mass(t):
+#     if t < acceleration_time:
+#         return original_mass-1025*t/acceleration_time
+#     else:
+#         return 475
+# def rho(h):
+#     if h > 25000:
+#         T = -131.21 + 0.00299*h
+#         p = 2.488 * ((T+273.1)/216.6)**(-11.388)
+#     elif 25000 >= h > 11000:
+#         T = -56.46
+#         p = 22.65*e**(1.73-0.000157*h)
+#     else:
+#         T = 15.04-0.00649*h
+#         p = 101.29*((T+273.1)/288.08)**(5.256)
+#     rho = p/(0.2869*(T+273.1))
+#     return rho
+# def push(direction):
+#     push = pushing_force*norm(direction)
+#     return push
 
 def lift(rho,vec):
     return rho*volume*g*norm(vec)
@@ -72,7 +73,7 @@ def gravity(mass,h,vec):
 
 t = 0
 dt = 0.0001
-scene.center =rocket_3D
+scene.center =rocket_3D.pos
 while mag(rocket-center_of_earth)-radius_of_earth >= 0:
     rate(1000)
     m = mass(t)
@@ -86,7 +87,8 @@ while mag(rocket-center_of_earth)-radius_of_earth >= 0:
     rocket_3D.pos=rocket
     rocket_3D.axis=norm(v)*length_of_missile_body
     rocket_head.pos=rocket+norm(v)*length_of_missile_body
-    scene.center =rocket_3D
+    rocket_head.axis=norm(v)*length_of_warhead
+    scene.center =rocket_3D.pos
     t += dt
 
 print(rocket)
