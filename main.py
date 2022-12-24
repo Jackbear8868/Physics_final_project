@@ -14,10 +14,9 @@ radius_of_earth = 6.371 * 10**6 #地球半徑
 gravitational_constant = 6.6743 * 10 **(-11) #重力常數
 longitude = pi*121/180 
 latitude = pi*23.5/180
-origin_x = radius_of_earth * cos(longitude) * cos(latitude)
-origin_y = radius_of_earth * cos(longitude) * sin(latitude)
-origin_z = radius_of_earth * sin(radius_of_earth)
-
+origin_x = radius_of_earth * cos(latitude) * cos(longitude)
+origin_y = radius_of_earth * sin(latitude)
+origin_z = radius_of_earth * cos(latitude) * sin(longitude)
 drag_force_constant = 0.5 #拖曳力常數
 
 center_of_earth = vector(0,0,0) #地球球心
