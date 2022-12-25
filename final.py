@@ -1,5 +1,7 @@
 from vpython import *
 import math
+import cv2
+
 original_mass = 1500 #飛彈原本質量
 radius = 10000*0.23 #飛彈半徑
 length = 6.1 #飛彈長度
@@ -15,6 +17,8 @@ radius_of_earth = 6.371 * 10**6 #地球半徑
 gravitational_constant = 6.6743 * 10 **(-11) #重力常數
 longitude = pi*121/180#東經
 latitude = pi*23.5/180#北緯
+
+#座標系
 origin_x = radius_of_earth * cos(latitude) * cos(longitude)
 origin_y = radius_of_earth * sin(latitude)
 origin_z = -radius_of_earth * cos(latitude) * sin(longitude)
@@ -23,24 +27,20 @@ drag_force_constant = 0.5 #拖曳力常數
 
 center_of_earth = vector(0,0,0) #地球球心
 rocket = vector(origin_x,origin_y,origin_z) #火箭座標
-theta = pi/2.5#火箭發射仰角
-deviated_angle=0#火箭發射與北極偏角
-direction = norm(vector(0,1/sin(latitude)*radius_of_earth,0)-rocket)#切線方向
-#magd=mag(direction)
-tanvl=sin(theta)/cos(theta)
-tanvd=sin(deviated_angle)/cos(deviated_angle)
-nr=norm(rocket)
-y=vector(0,1,0)
-dv=norm(cross(y,rocket))
-add_v=direction+nr*tanvl+dv*tanvd
-direction=norm(add_v)#火箭發射方向
-print(direction)
-v = direction
-angular_velocity = 2*pi/86400 #地球自轉角速度
-h = 0 #火箭離地表高度
-omega = vector(0,angular_velocity,0)#要換成向量
+theta = 76.5*pi/180#火箭發射仰角
+deviated_angle=pi/2#火箭發射方向，從X軸向逆時針旋轉
 
-g = 9.8
+#計算火箭發射位置的坐標系
+x =  norm(cross(vector(0,1/sin(latitude)*radius_of_earth,0),rocket))
+y =  norm(cross(rocket,x))
+z = norm(cross(x,y))
+v = norm(norm(cos(deviated_angle)*x+sin(deviated_angle)*y)+z*tan(theta))#火箭發射方向
+h = 0 #火箭離地表高度
+omega = vector(0,2*pi/86400,0) #地球自轉角速度
+
+g = 9.8#重力加速度
+
+#模擬火箭發射
 scene = canvas(width=500, height=500, center=vec(0, -0.2, 0), background=vec(0.8,0.8,0.8),align="left")
 earth=sphere(pos=vec(0,0,0),radius=radius_of_earth, texture={'file':textures.earth})
 sim=sphere(pos=rocket,radius=0.01*radius_of_earth,make_trail=True)#標示起始發射點
@@ -51,12 +51,13 @@ rocket_3D.axis=norm(v)*length_of_missile_body
 rocket_head=cone(radius=radius,pos=rocket+norm(v)*length_of_missile_body,color=color.white)
 rocket_head.axis = norm(v)*length_of_warhead
 
-def mass(t):
+def mass(t):#燃料燃燒，質量隨時間降低
     if t < acceleration_time:
         return original_mass-1025*t/acceleration_time
-    else:
+    else:#燃燒停止
         return 475
-def rho(h):
+
+def rho(h):#計算空氣密度
     if h > 25000:
         T = -131.21 + 0.00299*h
         p = 2.488 * ((T+273.1)/216.6)**(-11.388)
@@ -68,48 +69,58 @@ def rho(h):
         p = 101.29*((T+273.1)/288.08)**(5.256)
     rho = p/(0.2869*(T+273.1))
     return rho
-def push(direction):
+
+def push(direction):#計算火箭推力
     push = pushing_force*norm(direction)
     return push
 
-def lift(rho,vec):
+def lift(rho,vec):#計算浮力
     return rho*volume*g*norm(vec)
 
-def drag_force(rho,v):
+def drag_force(rho,v):#計算拖曳力
     return -0.5*rho*drag_force_constant*mag2(v)*cross_section*norm(v)
 
-def Coriolis_force(mass,omega,v):
+def Coriolis_force(mass,omega,v):#計算科氏力
     return -2*mass*cross(omega,v)
 
-def gravity(mass,h,vec):
+def gravity(mass,h,vec):#計算重力
     return - gravitational_constant*mass_of_earth*mass/(h+radius_of_earth)**2*norm(vec)
+
+def trans(f_vec):#座標轉換成經緯度
+    zero_vec=vector(1,0,0)
+    new_vec=vector(f_vec.x,0,f_vec.z)
+    cos_angle=dot(new_vec,zero_vec)/(mag(new_vec)*mag(zero_vec))
+    latitude=asin(f_vec.y/radius_of_earth)*180/pi
+    if f_vec.z<0:
+        longitude=acos(cos_angle)*180/pi
+        return "Eastern", longitude, latitude
+    else:
+        longitude=acos(cos_angle)*180/pi
+        return "Western", longitude, latitude
+
 t = 0
 dt = 0.005
 c_t=0
 distance_traveled=0
 projected_distance=0
-while mag(rocket-center_of_earth)-radius_of_earth >= -100:
+
+while mag(rocket-center_of_earth)-radius_of_earth >= -100:#火箭插入地球之前
     rate(10000)
-    m = mass(t)
-    h = mag(rocket)-radius_of_earth
-    RHO = rho(h)
-    F = lift(RHO,rocket) + drag_force(RHO,v) + Coriolis_force(m,omega,v) + gravity(m,h,rocket)
-    
-    if t < acceleration_time: F += push(v)
+    m = mass(t)#計算質量
+    h = mag(rocket)-radius_of_earth#計算離地高度
+    RHO = rho(h)#計算空氣密度
+    F = lift(RHO,rocket) + drag_force(RHO,v) + Coriolis_force(m,omega,v) + gravity(m,h,rocket)#計算火箭受力
+    if t < acceleration_time: F += push(v)#燃料燃燒殆盡前仍有推力
     a = F/m
     v += a * dt
     rocket += v * dt
     distance_traveled+=mag(v*dt)#ds
+    # 計算投影
     cos_phi=dot(rocket,v*dt)/(mag(rocket)*mag(v*dt))
     sin_phi=math.sqrt(1-cos_phi**2)
     projected_distance+=sin_phi*mag(v*dt)
-    #sim.pos=rocket
     scene.center=rocket
-    if c_t>=10:
-        print(t,rocket,mag(rocket-center_of_earth)-radius_of_earth,RHO)
-        c_t=0
     t += dt
-    c_t+=dt
 
     rocket_3D.pos=rocket
     rocket_3D.axis=norm(v)*length_of_missile_body
@@ -117,7 +128,7 @@ while mag(rocket-center_of_earth)-radius_of_earth >= -100:
     rocket_head.axis = norm(v)*length_of_warhead
     # scene.center =rocket_3D
 
-    
+we,new_long,new_lat=trans(rocket)
 # scene.center = rocket
 print(acceleration_time)
 print("time:",t)
@@ -125,3 +136,12 @@ print("distance traveled(km): ",round(distance_traveled/1000,2))#總射程
 print("distance traveled(projected on the surface of earth)(km): ",round(projected_distance/1000,2))
 print("original position: ",(origin_x,origin_y,origin_z))
 print("final position: ",rocket)
+print(f'longitude = {new_long}, latitude = {new_lat}')
+
+img = cv2.imread('taiwan_map.jpg')
+rows,cols,ch = img.shape #寬671km，長799km，附近經度1度 = 101km，附近緯度1度 = 111km
+position = (int(img.shape[1]//2+(new_long-121)*101/671*img.shape[1]),int(img.shape[0]//2-(new_lat-23.5)*111/799*img.shape[0]))
+cv2.circle(img,position,5,(0,0,255),thickness=-1)
+cv2.namedWindow('image')
+cv2.imshow('image',img)#顯示落點圖
+cv2.waitKey(0)
